@@ -6,6 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import MyTabs from "./components/Tabs";
 import Login from "./components/Login/Login";
 import Register from "./components/Register/Register";
+import ChatRoom from "./components/ChatRoom/ChatRoom";
 
 const Stack = createStackNavigator();
 
@@ -39,14 +40,10 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {isLoggedIn ? (
-          <Stack.Screen name="Main" component={MyTabs} />
-        ) : (
-          <>
-            <Stack.Screen name="Login" component={Login} />
-            <Stack.Screen name="Register" component={Register} />
-          </>
-        )}
+        <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="main" component={MyTabs} />
+        <Stack.Screen name="Register" component={Register} />
+        <Stack.Screen name="ChatRoom" component={ChatRoom} />
       </Stack.Navigator>
     </NavigationContainer>
   );

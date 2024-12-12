@@ -1,345 +1,333 @@
-import { View, Text, Image, Pressable, TextInput, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import {
+   View,
+   Text,
+   Image,
+   Pressable,
+   TextInput,
+   TouchableOpacity,
+} from "react-native";
+import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import Button from '../Login/Button';
-import COLORS from '../../constants/COLOR';
-import { MYIP } from '../../constants/Utils';
+import Button from "../Login/Button";
+import COLORS from "../../constants/COLOR";
+import { MYIP } from "../../constants/Utils";
 
 const Register = ({ navigation }) => {
    const ipv4 = MYIP.Myip;
 
-   const [email, setEmail] = useState('');
-   const [password, setPassword] = useState('');
-   const [passwordConfirm, setPasswordConfirm] = useState('');
-   const [username, setUsername] = useState('');
-   const [errorMessage, setErrorMessage] = useState('');
+   const [email, setEmail] = useState("");
+   const [password, setPassword] = useState("");
+   const [passwordConfirm, setPasswordConfirm] = useState("");
+   const [username, setUsername] = useState("");
+   const [phoneNumber, setPhoneNumber] = useState("");
+   const [errorMessage, setErrorMessage] = useState("");
    const [isPasswordShown, setIsPasswordShown] = useState(true);
 
    const handlePasswordConfirm = () => {
       if (password !== passwordConfirm) {
-         setErrorMessage("Passwords don't match");
+         setErrorMessage("Mật khẩu không khớp");
       } else {
-         setErrorMessage('');
+         setErrorMessage("");
       }
    };
 
    const handleSignUp = async () => {
       handlePasswordConfirm();
-      const endpoint = `http://${ipv4}:8080/account/register`;
+      const endpoint = `http://${ipv4}:8080/api/account/register`;
       try {
          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-               'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-               email: email,
-               password: password,
-               userName: username,
-            }),
+         method: "POST",
+         headers: {
+            "Content-Type": "application/json",
+         },
+         body: JSON.stringify({
+            email: email,
+            password: password,
+            userName: username,
+            phoneNumber: phoneNumber,
+         }),
          });
-
          if (response.ok) {
-            console.log('Registration successful');
-            navigation.navigate('SignIn');
+         console.log("Đăng ký thành công");
+         navigation.navigate("SignIn");
          } else {
-            console.error('Registration failed');
+         console.error("Đăng ký thất bại");
          }
       } catch (error) {
-         console.error('Error during registration:', error);
-         console.error('Response:', await response.text());
+         console.error("Lỗi khi đăng ký:", error);
       }
    };
 
    return (
       <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
          <View style={{ flex: 1, marginHorizontal: 22 }}>
-            <View style={{ marginVertical: 22 }}>
-               <Text style={{
-                  fontSize: 22,
-                  fontWeight: 'bold',
-                  marginVertical: 12,
-                  color: COLORS.black
-               }}>
-                  Create Account
-               </Text>
-
-               <Text style={{
-                  fontSize: 16,
-                  color: COLORS.black
-               }}>Connect with your friend today!</Text>
-            </View>
-
-            <View style={{ marginBottom: 12 }}>
-               <Text style={{
-                  fontSize: 16,
-                  fontWeight: 400,
-                  marginVertical: 8
-               }}>Email address</Text>
-
-               <View style={{
-                  width: "100%",
-                  height: 48,
-                  borderColor: COLORS.black,
-                  borderWidth: 1,
-                  borderRadius: 8,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingLeft: 22
-               }}>
-                  <TextInput
-                     placeholder='Enter your email address'
-                     placeholderTextColor={COLORS.black}
-                     keyboardType='email-address'
-                     onChangeText={(text) => setEmail(text)}
-                     style={{
-                        width: "100%"
-                     }}
-                  />
-               </View>
-            </View>
-
-            <View style={{ marginBottom: 12 }}>
-               <Text style={{
-                  fontSize: 16,
-                  fontWeight: 400,
-                  marginVertical: 8
-               }}>Password</Text>
-
-               <View style={{
-                  width: "100%",
-                  height: 48,
-                  borderColor: COLORS.black,
-                  borderWidth: 1,
-                  borderRadius: 8,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingLeft: 22
-               }}>
-                  <TextInput
-                     placeholder='Enter your password'
-                     placeholderTextColor={COLORS.black}
-                     secureTextEntry={isPasswordShown}
-                     onChangeText={(text) => setPassword(text)}
-                     style={{
-                        width: "100%"
-                     }}
-                  />
-
-                  <TouchableOpacity
-                     onPress={() => setIsPasswordShown(!isPasswordShown)}
-                     style={{
-                        position: "absolute",
-                        right: 12
-                     }}
-                  >
-                     {
-                        isPasswordShown == true ? (
-                           <Ionicons name="eye-off" size={24} color={COLORS.black} />
-                        ) : (
-                           <Ionicons name="eye" size={24} color={COLORS.black} />
-                        )
-                     }
-
-                  </TouchableOpacity>
-               </View>
-            </View>
-
-            <View style={{ marginBottom: 12 }}>
-               <Text style={{
-                  fontSize: 16,
-                  fontWeight: 400,
-                  marginVertical: 8
-               }}>Password Confirm</Text>
-
-               <View style={{
-                  width: "100%",
-                  height: 48,
-                  borderColor: COLORS.black,
-                  borderWidth: 1,
-                  borderRadius: 8,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingLeft: 22
-               }}>
-                  <TextInput
-                     placeholder='Enter your password'
-                     placeholderTextColor={COLORS.black}
-                     secureTextEntry={isPasswordShown}
-                     onChangeText={(text) => setPasswordConfirm(text)}
-                     style={{
-                        width: "100%"
-                     }}
-                  />
-
-                  <TouchableOpacity
-                     onPress={() => setIsPasswordShown(!isPasswordShown)}
-                     style={{
-                        position: "absolute",
-                        right: 12
-                     }}
-                  >
-                     {
-                        isPasswordShown == true ? (
-                           <Ionicons name="eye-off" size={24} color={COLORS.black} />
-                        ) : (
-                           <Ionicons name="eye" size={24} color={COLORS.black} />
-                        )
-                     }
-
-                  </TouchableOpacity>
-               </View>
-            </View>
-
-            <View style={{ marginBottom: 12 }}>
-               <Text style={{
-                  fontSize: 16,
-                  fontWeight: 400,
-                  marginVertical: 8
-               }}>Username</Text>
-
-               <View style={{
-                  width: "100%",
-                  height: 48,
-                  borderColor: COLORS.black,
-                  borderWidth: 1,
-                  borderRadius: 8,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingLeft: 22
-               }}>
-                  <TextInput
-                     placeholder='Enter your username'
-                     placeholderTextColor={COLORS.black}
-                     keyboardType='email-address'
-                     onChangeText={(text) => setUsername(text)}
-                     style={{
-                        width: "100%"
-                     }}
-                  />
-               </View>
-            </View>
-            <View style={{
-               flexDirection: 'row',
-               marginVertical: 6
-            }}>
-            </View>
-
-            <Button
-               title="Sign Up"
-               filled
+         <View style={{ marginVertical: 22 }}>
+            <Text
                style={{
-                  marginTop: 18,
-                  marginBottom: 4,
+               fontSize: 22,
+               fontWeight: "bold",
+               marginVertical: 12,
+               color: COLORS.black,
                }}
-               onPress={handleSignUp}
-            />
+            >
+               Tạo Tài Khoản
+            </Text>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 20 }}>
-               <View
-                  style={{
-                     flex: 1,
-                     height: 1,
-                     backgroundColor: COLORS.grey,
-                     marginHorizontal: 10
-                  }}
-               />
-               <Text style={{ fontSize: 14 }}>Or Sign up with</Text>
-               <View
-                  style={{
-                     flex: 1,
-                     height: 1,
-                     backgroundColor: COLORS.grey,
-                     marginHorizontal: 10
-                  }}
+            <Text
+               style={{
+               fontSize: 16,
+               color: COLORS.black,
+               }}
+            >
+               Kết nối với bạn bè ngay hôm nay!
+            </Text>
+         </View>
+
+         <View style={{ marginBottom: 12 }}>
+            <Text
+               style={{
+               fontSize: 16,
+               fontWeight: 400,
+               marginVertical: 8,
+               }}
+            >
+               Địa chỉ Email
+            </Text>
+
+            <View
+               style={{
+               width: "100%",
+               height: 48,
+               borderColor: COLORS.black,
+               borderWidth: 1,
+               borderRadius: 8,
+               alignItems: "center",
+               justifyContent: "center",
+               paddingLeft: 22,
+               }}
+            >
+               <TextInput
+               placeholder="Nhập email của bạn"
+               placeholderTextColor={COLORS.black}
+               keyboardType="email-address"
+               onChangeText={(text) => setEmail(text)}
+               style={{
+                  width: "100%",
+               }}
                />
             </View>
+         </View>
 
-            <View style={{
-               flexDirection: 'row',
-               justifyContent: 'center'
-            }}>
+         <View style={{ marginBottom: 12 }}>
+            <Text
+               style={{
+               fontSize: 16,
+               fontWeight: 400,
+               marginVertical: 8,
+               }}
+            >
+               Số điện thoại
+            </Text>
+
+            <View
+               style={{
+               width: "100%",
+               height: 48,
+               borderColor: COLORS.black,
+               borderWidth: 1,
+               borderRadius: 8,
+               alignItems: "center",
+               justifyContent: "center",
+               paddingLeft: 22,
+               }}
+            >
+               <TextInput
+               placeholder="Nhập số điện thoại của bạn"
+               placeholderTextColor={COLORS.black}
+               keyboardType="phone-pad"
+               onChangeText={(text) => setPhoneNumber(text)}
+               style={{
+                  width: "100%",
+               }}
+               />
+            </View>
+         </View>
+
+         <View style={{ marginBottom: 12 }}>
+            <Text
+               style={{
+               fontSize: 16,
+               fontWeight: 400,
+               marginVertical: 8,
+               }}
+            >
+               Mật khẩu
+            </Text>
+
+            <View
+               style={{
+               width: "100%",
+               height: 48,
+               borderColor: COLORS.black,
+               borderWidth: 1,
+               borderRadius: 8,
+               alignItems: "center",
+               justifyContent: "center",
+               paddingLeft: 22,
+               }}
+            >
+               <TextInput
+               placeholder="Nhập mật khẩu của bạn"
+               placeholderTextColor={COLORS.black}
+               secureTextEntry={isPasswordShown}
+               onChangeText={(text) => setPassword(text)}
+               style={{
+                  width: "100%",
+               }}
+               />
+
                <TouchableOpacity
-                  onPress={() => console.log("Pressed")}
-                  style={{
-                     flex: 1,
-                     alignItems: 'center',
-                     justifyContent: 'center',
-                     flexDirection: 'row',
-                     height: 52,
-                     borderWidth: 1,
-                     borderColor: COLORS.grey,
-                     marginRight: 4,
-                     borderRadius: 10
-                  }}
+               onPress={() => setIsPasswordShown(!isPasswordShown)}
+               style={{
+                  position: "absolute",
+                  right: 12,
+               }}
                >
-                  <Image
-                     source={{ uri: "http://pngimg.com/uploads/facebook_logos/facebook_logos_PNG19753.png" }}
-                     style={{
-                        height: 36,
-                        width: 36,
-                        marginRight: 8
-                     }}
-                     resizeMode='contain'
-                  />
-
-                  <Text>Facebook</Text>
-               </TouchableOpacity>
-
-               <TouchableOpacity
-                  onPress={() => console.log("Pressed")}
-                  style={{
-                     flex: 1,
-                     alignItems: 'center',
-                     justifyContent: 'center',
-                     flexDirection: 'row',
-                     height: 52,
-                     borderWidth: 1,
-                     borderColor: COLORS.grey,
-                     marginRight: 4,
-                     borderRadius: 10
-                  }}
-               >
-                  <Image
-                     source={{ uri: "http://pluspng.com/img-png/google-logo-png-revised-google-logo-1600.png" }}
-                     style={{
-                        height: 60,
-                        width: 60,
-                        marginRight: 8
-                     }}
-                     resizeMode='contain'
-                  />
-
-                  <Text>Google</Text>
+               {isPasswordShown == true ? (
+                  <Ionicons name="eye-off" size={24} color={COLORS.black} />
+               ) : (
+                  <Ionicons name="eye" size={24} color={COLORS.black} />
+               )}
                </TouchableOpacity>
             </View>
+         </View>
 
-            <View style={{
+         <View style={{ marginBottom: 12 }}>
+            <Text
+               style={{
+               fontSize: 16,
+               fontWeight: 400,
+               marginVertical: 8,
+               }}
+            >
+               Xác nhận mật khẩu
+            </Text>
+
+            <View
+               style={{
+               width: "100%",
+               height: 48,
+               borderColor: COLORS.black,
+               borderWidth: 1,
+               borderRadius: 8,
+               alignItems: "center",
+               justifyContent: "center",
+               paddingLeft: 22,
+               }}
+            >
+               <TextInput
+               placeholder="Nhập lại mật khẩu của bạn"
+               placeholderTextColor={COLORS.black}
+               secureTextEntry={isPasswordShown}
+               onChangeText={(text) => setPasswordConfirm(text)}
+               style={{
+                  width: "100%",
+               }}
+               />
+
+               <TouchableOpacity
+               onPress={() => setIsPasswordShown(!isPasswordShown)}
+               style={{
+                  position: "absolute",
+                  right: 12,
+               }}
+               >
+               {isPasswordShown == true ? (
+                  <Ionicons name="eye-off" size={24} color={COLORS.black} />
+               ) : (
+                  <Ionicons name="eye" size={24} color={COLORS.black} />
+               )}
+               </TouchableOpacity>
+            </View>
+         </View>
+
+         <View style={{ marginBottom: 12 }}>
+            <Text
+               style={{
+               fontSize: 16,
+               fontWeight: 400,
+               marginVertical: 8,
+               }}
+            >
+               Tên người dùng
+            </Text>
+
+            <View
+               style={{
+               width: "100%",
+               height: 48,
+               borderColor: COLORS.black,
+               borderWidth: 1,
+               borderRadius: 8,
+               alignItems: "center",
+               justifyContent: "center",
+               paddingLeft: 22,
+               }}
+            >
+               <TextInput
+               placeholder="Nhập tên người dùng của bạn"
+               placeholderTextColor={COLORS.black}
+               onChangeText={(text) => setUsername(text)}
+               style={{
+                  width: "100%",
+               }}
+               />
+            </View>
+         </View>
+
+         <Button
+            title="Đăng ký"
+            filled
+            style={{
+               marginTop: 18,
+               marginBottom: 4,
+            }}
+            onPress={handleSignUp}
+         />
+
+         <View
+            style={{
                flexDirection: "row",
                justifyContent: "center",
-               marginVertical: 22
-            }}>
-               <Text style={{ fontSize: 16, color: COLORS.black }}>Already have an account</Text>
-               <Pressable
-                  onPress={() => navigation.navigate("Login")}
+               marginVertical: 22,
+            }}
+         >
+            <Text style={{ fontSize: 16, color: COLORS.black }}>
+               Đã có tài khoản?
+            </Text>
+            <Pressable onPress={() => navigation.navigate("Login")}>
+               <Text
+               style={{
+                  fontSize: 16,
+                  color: COLORS.primary,
+                  fontWeight: "bold",
+                  marginLeft: 6,
+               }}
                >
-                  <Text style={{
-                     fontSize: 16,
-                     color: COLORS.primary,
-                     fontWeight: "bold",
-                     marginLeft: 6
-                  }}>Login</Text>
-               </Pressable>
+               Đăng nhập
+               </Text>
+            </Pressable>
+         </View>
+
+         {errorMessage ? (
+            <View style={{ marginVertical: 10, alignItems: "center" }}>
+               <Text style={{ color: "red" }}>{errorMessage}</Text>
             </View>
-            {errorMessage ? (
-               <View style={{ marginVertical: 10, alignItems: 'center' }}>
-                  <Text style={{ color: 'red' }}>{errorMessage}</Text>
-               </View>
-            ) : null}
+         ) : null}
          </View>
       </SafeAreaView>
-   )
-}
+   );
+};
 
-export default Register
+export default Register;

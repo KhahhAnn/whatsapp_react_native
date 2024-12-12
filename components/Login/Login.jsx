@@ -16,40 +16,38 @@ const Login = ({ navigation }) => {
    const [isPasswordShown, setIsPasswordShown] = useState(true);
 
    const handleSignIn = async () => {
-      const endpoint = `http://${ipv4}:8080/account/sign-in`;
-
+      const endpoint = `http://${ipv4}:8080/api/account/login`;
       try {
-         const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-               'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-               email: email,
-               password: password,
-            }),
-         });
-
-         if (!response.ok) {
-            const errorText = await response.text();
-            console.log('Error:', response.status, errorText);
-            throw new Error("Mật khẩu hoặc tài khoản sai");
+            const response = await fetch(endpoint, {
+               method: 'POST',
+               headers: {
+                     'Content-Type': 'application/json',
+               },
+               body: JSON.stringify({
+                     email: email,
+                     password: password,
+                     rememberMe: true
+               }),
+            });
+   
+            console.log("response", response);
+   
+            if (!response.ok) {
+               const errorText = await response.text();
+               console.log('Error:', response.status, errorText);
+               throw new Error("Mật khẩu hoặc tài khoản sai");
+            }
+   
+            const userJson = await response.json();
+      
+            _storeData(userJson);
+   
+            navigation.navigate("main");
+   
+         } catch (error) {
+            console.log('Error during sign-in:', error.message);
+            setError(error.message);
          }
-
-         const userResponse = await fetch(`http://${ipv4}:8080/user/search/findByEmail?email=${email}`);
-         const userJson = await userResponse.json();
-
-         console.log('User data received:', userJson);
-
-         _storeData(userJson);
-
-         navigation.navigate("Main");
-
-         console.log('User data stored:', userJson);
-      } catch (error) {
-         console.log('Error during sign-in:', error.message);
-         setError(error.message);
-      }
    };
 
    const _storeData = async (userData) => {

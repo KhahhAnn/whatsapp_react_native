@@ -1,3 +1,3 @@
 export const MYIP = {
-   Myip: "192.168.1.13",
+   Myip: "192.168.23.102",
 };
