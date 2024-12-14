@@ -1,3 +1,3 @@
 export const MYIP = {
-   Myip: "192.168.23.102",
+   Myip: "https://whatsapp-server-lemon.vercel.app",
 };

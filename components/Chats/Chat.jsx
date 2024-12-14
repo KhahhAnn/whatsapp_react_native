@@ -20,62 +20,70 @@ export default function Chat() {
   const ipv4 = MYIP.Myip;
   const [store, setStore] = useState();
   const [contactData, setContactData] = useState();
-    const navigation = useNavigation();
+  const navigation = useNavigation();
 
   const getUserData = async () => {
     try {
-        const userData = await AsyncStorage.getItem("userStore");
-        const user = JSON.parse(userData);
-        return user;
+      const userData = await AsyncStorage.getItem("userStore");
+      const user = JSON.parse(userData);
+      return user;
     } catch (error) {
       console.error("Error retrieving user data:", error.message);
       return null;
     }
   };
 
-
   useEffect(() => {
     const fetchData = async () => {
       const data = await getUserData();
       if (data) {
+        const endpoint = `${ipv4}/api/contact/contacts-user/${data.user.userId}`;
         try {
-          const endpoint = `http://${ipv4}:8080/api/contact/contacts-user/${data.user.userId}`;
           const response = await fetch(endpoint, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${data.accessToken}` 
+              Authorization: `Bearer ${data.accessToken}`,
             },
           });
-
+  
           if (!response.ok) {
             const errorText = await response.text();
             console.log("Error:", response.status, errorText);
             throw new Error("Error fetching contacts");
           }
-
-          const contactsData = await response.json();          
+  
+          const contactsData = await response.json();
           setContactData(contactsData);
+
+          // Kết nối socket
+          // if (!socket.connected) {
+          //   socket.auth = {
+          //     userId: data.user.userId,
+          //   };
+          //   console.log("Connect socket: ", socket.auth);
+          //   socket.connect();
+          // }
         } catch (error) {
           console.error("Error fetching contacts:", error.message);
         }
       }
     };
-
+  
     fetchData();
   }, []);
-
-
-  console.log("contactsData", contactData);
   
 
-  const Item = ({ name, image, message, time }) => (
-    <View onPress={() => navigation.navigate('ChatRoom')}>
-      <TouchableOpacity activeOpacity={0.6} onPress={() => navigation.navigate('ChatRoom')}>
+  const Item = ({ name, image, message, time, item }) => (
+    <View onPress={() => navigation.navigate("ChatRoom")}>
+      <TouchableOpacity
+        activeOpacity={0.6}
+        onPress={() => navigation.navigate("ChatRoom", { item })}
+      >
         <View style={styles.userCtn}>
           <Image
             style={styles.image}
-            source={{uri: image}}
+            source={{ uri: image }}
             borderRadius={50}
             resizeMode="cover"
           />
@@ -105,7 +113,7 @@ export default function Chat() {
                 message={"test"}
                 image={item.avatar}
                 time={"10:00"}
-                onPress={() => navigation.navigate('ChatRoom')}
+                item={item}
               />
             )}
             keyExtractor={(item) => item.id}

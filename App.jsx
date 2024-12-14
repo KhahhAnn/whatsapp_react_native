@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, View, ActivityIndicator } from "react-native";
+import {
+  StyleSheet,
+  View,
+  ActivityIndicator,
+  SafeAreaView,
+} from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -7,6 +12,7 @@ import MyTabs from "./components/Tabs";
 import Login from "./components/Login/Login";
 import Register from "./components/Register/Register";
 import ChatRoom from "./components/ChatRoom/ChatRoom";
+import { StatusBar } from "expo-status-bar";
 
 const Stack = createStackNavigator();
 
@@ -31,9 +37,12 @@ export default function App() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+        <StatusBar barStyle="light-content" backgroundColor="#000" />
+      </SafeAreaView>
     );
   }
 

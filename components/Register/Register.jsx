@@ -34,7 +34,7 @@ const Register = ({ navigation }) => {
 
    const handleSignUp = async () => {
       handlePasswordConfirm();
-      const endpoint = `http://${ipv4}:8080/api/account/register`;
+      const endpoint = `${ipv4}/api/account/register`;
       try {
          const response = await fetch(endpoint, {
          method: "POST",

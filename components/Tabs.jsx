@@ -1,15 +1,18 @@
-import { Text, Animated, View, StyleSheet,
-    TouchableOpacity, Image } from 'react-native';
+import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import Chat from './Chats/Chat';
-import Updates from './Updates/Updates';
-import Communities from './Communities/Communities';
+import {
+  StyleSheet,
+  View
+} from 'react-native';
 import Calls from './Calls/Calls';
-import { MaterialIcons, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-
+import Chat from './Chats/Chat';
+import Communities from './Communities/Communities';
+import Updates from './Updates/Updates';
 const Tab = createMaterialTopTabNavigator();
 
+
 export default function MyTabs() {
+    
   return (
     <Tab.Navigator
       initialRouteName="Chats"

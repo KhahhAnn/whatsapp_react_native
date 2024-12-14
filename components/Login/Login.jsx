@@ -16,7 +16,7 @@ const Login = ({ navigation }) => {
    const [isPasswordShown, setIsPasswordShown] = useState(true);
 
    const handleSignIn = async () => {
-      const endpoint = `http://${ipv4}:8080/api/account/login`;
+      const endpoint = `${ipv4}/api/account/login`;
       try {
             const response = await fetch(endpoint, {
                method: 'POST',
@@ -29,9 +29,7 @@ const Login = ({ navigation }) => {
                      rememberMe: true
                }),
             });
-   
-            console.log("response", response);
-   
+               
             if (!response.ok) {
                const errorText = await response.text();
                console.log('Error:', response.status, errorText);
