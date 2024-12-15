@@ -1,10 +1,23 @@
 import { useRoute } from "@react-navigation/native";
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, ImageBackground } from "react-native";
+import {
+   View,
+   Text,
+   TextInput,
+   FlatList,
+   StyleSheet,
+   TouchableOpacity,
+   ImageBackground,
+   Image,
+   KeyboardAvoidingView,
+   Platform,
+} from "react-native";
 import Icon from "react-native-vector-icons/Ionicons"; // Cần cài đặt react-native-vector-icons
 import { MYIP } from "../../constants/Utils";
 import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import EmojiSelector from "react-native-emoji-selector";
+import socket from "../Socket/socketConnect";
 
 const initialMessages = [
    { id: "1", text: "Xin chào", sender: "me" },
@@ -14,32 +27,38 @@ const initialMessages = [
 
 const ChatRoom = ({ navigation }) => {
    const route = useRoute();
-   const { item } = route.params; 
+   const { item } = route.params;
 
    const [messages, setMessages] = useState(initialMessages);
-   const [input, setInput] = useState("");   
+   const [messageData, setMessageData] = useState();
+   const [input, setInput] = useState("");
+   const [userStore, setUserStore] = useState();
+   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
    useEffect(() => {
       // Kết nối socket khi component mount
       const fetchData = async (receiverId) => {
          const data = await getUserData();
+         setUserStore(data);
          if (data) {
-            const endpoint = `https://whatsapp-server-lemon.vercel.app/api//message/messages-between/${data.user.userId}/${receiverId}`;
+            const endpoint = `${MYIP.Myip}/api/message/messages-between/${data.user.userId}/${receiverId}`;
+
             try {
                const response = await fetch(endpoint, {
                   method: "GET",
                   headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${data.accessToken}`,
+                     "Content-Type": "application/json",
+                     Authorization: `Bearer ${data.accessToken}`,
                   },
-               });            
-   
-               console.log("response", response);
-               
+               });
+
                if (!response.ok) {
                   const errorText = await response.text();
                   console.log("Error:", response.status, errorText);
                   throw new Error("Error fetching contacts");
+               } else {
+                  const data = await response.json();
+                  setMessageData(data.reverse());
                }
             } catch (error) {
                console.error("Error fetching contacts:", error.message);
@@ -50,34 +69,122 @@ const ChatRoom = ({ navigation }) => {
       fetchData(item.contactUserId);
    }, []);
 
-   // const handleSend = () => {
-   //    if (input.trim()) {
-   //       const message = { id: Date.now().toString(), text: input.trim(), sender: "me" };
-   //       socket.emit("privateMessage", { message: message.text, to: item.userId });
-   //       setMessages((prevMessages) => [message, ...prevMessages]);
-   //       setInput("");
-   //    }
-   // };
+   const sendMessage = (message, from, to) => {
+      try {
+         socket.emit('privateMessage', {
+            message,
+            from,
+            to
+         });
+         console.log('Send message: ', message, to);
+      } catch (error) {
+         console.log('error ', error);
+      }
+   };
+
+   const handleCreateMessage = async (senderId, receiverId, content, mediaUrl) => {
+      const endpoint = `${MYIP.Myip}/api/message/create`;
+      try {
+         const response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+               "Content-Type": "application/json",
+               Authorization: `Bearer ${userStore.accessToken}`,
+            },
+            body: JSON.stringify({
+               senderId,
+               receiverId,
+               content,
+               mediaUrl,
+            }),
+         });
+
+         if (!response.ok) {
+            const errorText = await response.text();
+            console.log("Error:", response.status, errorText);
+            throw new Error("Error creating message");
+         } else {
+            const data = await response.json();
+            setMessageData((prevMessages) => [data, ...prevMessages]);
+         }
+      } catch (error) {
+         console.error("Error fetching contacts:", error.message);
+      }
+   };
+
+   const handleSend = async () => {
+      if (input.trim()) {
+         const newMessage = {
+            id: Date.now().toString(),
+            content: input.trim(),
+            senderId: userStore.user.userId,
+            receiverId: item.contactUserId,
+            type: "text",
+         };
+
+         sendMessage(input.trim(), userStore.user.userId, item.contactUserId);
+         await handleCreateMessage(userStore.user.userId, item.contactUserId, input.trim());
+         setInput("");
+
+         // Cập nhật tin nhắn mới vào danh sách
+         setMessageData((prevMessages) => [newMessage, ...prevMessages]);
+      }
+   };
+
+   console.log("userStore", userStore);
+   
 
    const getUserData = async () => {
       try {
          const userData = await AsyncStorage.getItem("userStore");
          const user = JSON.parse(userData);
          return user;
-         } catch (error) {
+      } catch (error) {
          console.error("Error retrieving user data:", error.message);
          return null;
       }
    };
 
-   
+   const handleEmojiSelect = (emoji) => {
+      setInput((prev) => prev + emoji);
+   };
 
+   const handleImageSelect = async () => {
+      const result = await launchImageLibrary({
+         mediaType: "photo",
+         quality: 1,
+      });
+
+      if (result.assets && result.assets.length > 0) {
+         const image = result.assets[0];
+         const newMessage = {
+            id: Date.now().toString(),
+            content: image.uri,
+            senderId: userStore.user.userId,
+            receiverId: item.contactUserId,
+            type: "image",
+         };
+         setMessageData([newMessage, ...messageData]);
+
+         // Gửi ảnh lên server qua WebSocket hoặc API
+      }
+   };
+
+   console.log("input", input);
 
    return (
-      <View style={styles.container}>
-      {/* Tiêu đề */}
-      <View style={styles.header}>
-         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+      <KeyboardAvoidingView
+         style={{ flex: 1 }}
+         behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+
+<View style={styles.container}>
+         {/* Header */}
+         <View style={styles.header}>
+         <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+         >
             <Icon name="arrow-back" size={24} color="#fff" />
          </TouchableOpacity>
          <View style={styles.titleContainer}>
@@ -92,38 +199,76 @@ const ChatRoom = ({ navigation }) => {
             </TouchableOpacity>
          </View>
       </View>
-      {/* Danh sách tin nhắn */}
-      <ImageBackground source={require('../../assets/peakpx.jpg')} style={styles.container}>
+
+         {/* Message List */}
+         <ImageBackground
+         source={require("../../assets/peakpx.jpg")}
+         style={styles.container}
+      >
          <FlatList
-            data={messages}
+            data={messageData}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
                <View
-                  style={[
+               style={[
                   styles.messageContainer,
-                  item.sender === "me" ? styles.myMessage : styles.theirMessage,
-                  ]}
+                  item.senderId === userStore.user.userId
+                     ? styles.myMessage
+                     : styles.theirMessage,
+               ]}
                >
-                  <Text style={styles.messageText}>{item.text}</Text>
+               {item.content && item.content.startsWith("data:image") ? (
+                  <Image
+                     source={{ uri: item.content }}
+                     style={styles.messageImage}
+                     resizeMode="cover"
+                  />
+               ) : (
+                  <Text style={styles.messageText}>{item.content}</Text>
+               )}
                </View>
             )}
             inverted
          />
       </ImageBackground>
-      {/* Hộp nhập liệu */}
-      <View style={styles.inputContainer}>
-         <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Nhập tin nhắn..."
-            placeholderTextColor="#aaa"
-         />
-         <TouchableOpacity style={styles.sendButton}>
-            <Text style={styles.sendButtonText}>Gửi</Text>
-         </TouchableOpacity>
+
+         {/* Emoji Selector */}
+         {showEmojiPicker && (
+            <EmojiSelector
+               onEmojiSelected={handleEmojiSelect}
+               columns={8}
+               showSearchBar={false}
+               showTabs={true}
+            />
+         )}
+
+         {/* Input Box */}
+         <View style={styles.inputContainer}>
+            <TouchableOpacity
+               onPress={handleImageSelect}
+               style={styles.iconButton}
+            >
+               <Icon name="image-outline" size={24} color="#075E54" />
+            </TouchableOpacity>
+            <TouchableOpacity
+               onPress={() => setShowEmojiPicker((prev) => !prev)}
+               style={styles.iconButton}
+            >
+               <Icon name="happy-outline" size={24} color="#075E54" />
+            </TouchableOpacity>
+            <TextInput
+               style={styles.input}
+               value={input}
+               onChangeText={setInput}
+               placeholder="Nhập tin nhắn..."
+               placeholderTextColor="#aaa"
+            />
+            <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+               <Text style={styles.sendButtonText}>Gửi</Text>
+            </TouchableOpacity>
+         </View>
       </View>
-      </View>
+      </KeyboardAvoidingView>
    );
 };
 
@@ -132,13 +277,19 @@ const styles = StyleSheet.create({
       flex: 1,
       backgroundColor: "#e5ddd5",
    },
+   messageImage: {
+      width: 300,
+      height: 300,
+      borderRadius: 10,
+      marginTop: 5,
+   },
    header: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       padding: 10,
       paddingTop: 50,
-      backgroundColor: "#075E54", 
+      backgroundColor: "#075E54",
    },
    backButton: {
       paddingHorizontal: 10,
@@ -149,59 +300,56 @@ const styles = StyleSheet.create({
    },
    title: {
       color: "#fff",
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: "bold",
    },
    actionButtons: {
       flexDirection: "row",
    },
    iconButton: {
-      marginLeft: 15,
-   },
-   messageContainer: {
-      maxWidth: "80%",
-      marginVertical: 5,
-      padding: 10,
-      borderRadius: 10,
-   },
-   myMessage: {
-      alignSelf: "flex-end",
-      backgroundColor: "#DCF8C6",
-   },
-   theirMessage: {
-      alignSelf: "flex-start",
-      backgroundColor: "#ffffff",
-   },
-   messageText: {
-      fontSize: 16,
-      color: "#333",
+      marginLeft: 10,
+      padding: 5,
    },
    inputContainer: {
       flexDirection: "row",
       alignItems: "center",
       padding: 10,
-      backgroundColor: "#ffffff",
-      borderTopWidth: 1,
-      borderColor: "#ddd",
+      backgroundColor: "#fff",
    },
    input: {
       flex: 1,
       height: 40,
-      borderWidth: 1,
-      borderColor: "#ddd",
       borderRadius: 20,
-      paddingHorizontal: 15,
-      marginRight: 10,
+      paddingHorizontal: 10,
+      backgroundColor: "#e5ddd5",
    },
    sendButton: {
-      paddingVertical: 10,
-      paddingHorizontal: 20,
       backgroundColor: "#075E54",
       borderRadius: 20,
+      paddingVertical: 5,
+      paddingHorizontal: 15,
    },
    sendButtonText: {
       color: "#fff",
       fontWeight: "bold",
+   },
+   messageContainer: {
+      marginVertical: 5,
+      marginHorizontal: 10,
+      padding: 10,
+      borderRadius: 10,
+      maxWidth: "80%",
+   },
+   myMessage: {
+      alignSelf: "flex-end",
+      backgroundColor: "#d4edda",
+   },
+   theirMessage: {
+      alignSelf: "flex-start",
+      backgroundColor: "#f8f9fa",
+   },
+   messageText: {
+      fontSize: 16,
    },
 });
 

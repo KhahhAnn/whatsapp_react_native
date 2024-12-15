@@ -1,3 +1,3 @@
 export const MYIP = {
-   Myip: "https://whatsapp-server-lemon.vercel.app",
+   Myip: "https://whatsapp-server-7wow.onrender.com",
 };

@@ -15,6 +15,7 @@ import { MYIP } from "../../constants/Utils";
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
+import socket from "../Socket/socketConnect";
 
 export default function Chat() {
   const ipv4 = MYIP.Myip;
@@ -57,13 +58,13 @@ export default function Chat() {
           setContactData(contactsData);
 
           // Kết nối socket
-          // if (!socket.connected) {
-          //   socket.auth = {
-          //     userId: data.user.userId,
-          //   };
-          //   console.log("Connect socket: ", socket.auth);
-          //   socket.connect();
-          // }
+          if (!socket.connected) {
+            socket.auth = {
+              userId: data.user.userId,
+            };
+            console.log("Connect socket: ", socket.auth);
+            socket.connect();
+          }
         } catch (error) {
           console.error("Error fetching contacts:", error.message);
         }
