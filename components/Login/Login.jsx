@@ -32,7 +32,7 @@ const Login = ({ navigation }) => {
                
             if (!response.ok) {
                const errorText = await response.text();
-               console.log('Error:', response.status, errorText);
+               console.log('Lỗi:', response.status, errorText);
                throw new Error("Mật khẩu hoặc tài khoản sai");
             }
    
@@ -43,7 +43,7 @@ const Login = ({ navigation }) => {
             navigation.navigate("main");
    
          } catch (error) {
-            console.log('Error during sign-in:', error.message);
+            console.log('Lỗi trong quá trình đăng nhập:', error.message);
             setError(error.message);
          }
    };
@@ -52,7 +52,7 @@ const Login = ({ navigation }) => {
       try {
          await AsyncStorage.setItem("userStore", JSON.stringify(userData));
       } catch (error) {
-         console.error('Error storing user data:', error.message);
+         console.error('Lỗi khi lưu dữ liệu người dùng:', error.message);
       }
    };
 
@@ -66,13 +66,13 @@ const Login = ({ navigation }) => {
                   marginVertical: 12,
                   color: COLORS.black
                }}>
-                  Hi Welcome Back! 👋
+                  Chào mừng bạn trở lại! 👋
                </Text>
 
                <Text style={{
                   fontSize: 16,
                   color: COLORS.black
-               }}>Hello again, you have been missed!</Text>
+               }}>Rất vui được gặp lại bạn!</Text>
             </View>
 
             <View style={{ marginBottom: 12 }}>
@@ -80,7 +80,7 @@ const Login = ({ navigation }) => {
                   fontSize: 16,
                   fontWeight: 400,
                   marginVertical: 8
-               }}>Email address</Text>
+               }}>Địa chỉ email</Text>
 
                <View style={{
                   width: "100%",
@@ -93,7 +93,7 @@ const Login = ({ navigation }) => {
                   paddingLeft: 22
                }}>
                   <TextInput
-                     placeholder='Enter your email address'
+                     placeholder='Nhập địa chỉ email của bạn'
                      placeholderTextColor={COLORS.black}
                      keyboardType='email-address'
                      onChangeText={(text) => setEmail(text)}
@@ -109,7 +109,7 @@ const Login = ({ navigation }) => {
                   fontSize: 16,
                   fontWeight: 400,
                   marginVertical: 8
-               }}>Password</Text>
+               }}>Mật khẩu</Text>
 
                <View style={{
                   width: "100%",
@@ -122,7 +122,7 @@ const Login = ({ navigation }) => {
                   paddingLeft: 22
                }}>
                   <TextInput
-                     placeholder='Enter your password'
+                     placeholder='Nhập mật khẩu của bạn'
                      placeholderTextColor={COLORS.black}
                      secureTextEntry={isPasswordShown}
                      onChangeText={(text) => setPassword(text)}
@@ -148,7 +148,7 @@ const Login = ({ navigation }) => {
             </View>
 
             <Button
-               title="Login"
+               title="Đăng nhập"
                filled
                style={{
                   marginTop: 18,
@@ -170,7 +170,7 @@ const Login = ({ navigation }) => {
                      marginHorizontal: 10
                   }}
                />
-               <Text style={{ fontSize: 14 }}>Or Login with</Text>
+               <Text style={{ fontSize: 14 }}>Hoặc đăng nhập với</Text>
                <View
                   style={{
                      flex: 1,
@@ -243,7 +243,7 @@ const Login = ({ navigation }) => {
                justifyContent: "center",
                marginVertical: 22
             }}>
-               <Text style={{ fontSize: 16, color: COLORS.black }}>Don't have an account? </Text>
+               <Text style={{ fontSize: 16, color: COLORS.black }}>Chưa có tài khoản? </Text>
                <Pressable
                   onPress={() => navigation.navigate("Register")}
                >
@@ -252,7 +252,7 @@ const Login = ({ navigation }) => {
                      color: COLORS.primary,
                      fontWeight: "bold",
                      marginLeft: 6
-                  }}>Register</Text>
+                  }}>Đăng ký</Text>
                </Pressable>
             </View>
          </View>

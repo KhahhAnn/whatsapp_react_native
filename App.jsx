@@ -13,6 +13,8 @@ import Login from "./components/Login/Login";
 import Register from "./components/Register/Register";
 import ChatRoom from "./components/ChatRoom/ChatRoom";
 import { StatusBar } from "expo-status-bar";
+import CallVideo from "./components/Call/CallVideo";
+import CallVoice from "./components/Call/CallVoice";
 
 const Stack = createStackNavigator();
 
@@ -53,6 +55,8 @@ export default function App() {
         <Stack.Screen name="main" component={MyTabs} />
         <Stack.Screen name="Register" component={Register} />
         <Stack.Screen name="ChatRoom" component={ChatRoom} />
+        <Stack.Screen name="CallVoice" component={CallVoice} />
+        <Stack.Screen name="CallVideo" component={CallVideo} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,4 +1,4 @@
-import { useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import React, { useState, useEffect } from "react";
 import {
    View,
@@ -11,58 +11,60 @@ import {
    Image,
    KeyboardAvoidingView,
    Platform,
-} from "react-native";
-import Icon from "react-native-vector-icons/Ionicons"; // Cần cài đặt react-native-vector-icons
-import { MYIP } from "../../constants/Utils";
-import { io } from "socket.io-client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import EmojiSelector from "react-native-emoji-selector";
-import socket from "../Socket/socketConnect";
+   ActivityIndicator,
+   } from "react-native";
+   import Icon from "react-native-vector-icons/Ionicons"; // Cần cài đặt react-native-vector-icons
+   import { MYIP } from "../../constants/Utils";
+   import { io } from "socket.io-client";
+   import AsyncStorage from "@react-native-async-storage/async-storage";
+   import EmojiSelector from "react-native-emoji-selector";
+   import socket from "../Socket/socketConnect";
 
-const initialMessages = [
-   { id: "1", text: "Xin chào", sender: "me" },
-   { id: "2", text: "Mấy giờ chúng ta đi xem phim?", sender: "them" },
-   { id: "3", text: "8 giờ tối, mình nghĩ vậy...", sender: "me" },
-];
-
-const ChatRoom = ({ navigation }) => {
+   const ChatRoom = () => {
    const route = useRoute();
    const { item } = route.params;
 
-   const [messages, setMessages] = useState(initialMessages);
    const [messageData, setMessageData] = useState();
    const [input, setInput] = useState("");
    const [userStore, setUserStore] = useState();
    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+   const [hasReceivedMessage, setHasReceivedMessage] = useState(false);
+   const [isLoading, setIsLoading] = useState(true); // Thêm state isLoading
+   const navigation = useNavigation();
+   
 
    useEffect(() => {
       // Kết nối socket khi component mount
       const fetchData = async (receiverId) => {
+         setIsLoading(true); // Bắt đầu tải dữ liệu
          const data = await getUserData();
          setUserStore(data);
+
          if (data) {
-            const endpoint = `${MYIP.Myip}/api/message/messages-between/${data.user.userId}/${receiverId}`;
+         const endpoint = `${MYIP.Myip}/api/message/messages-between/${data.user.userId}/${receiverId}`;
 
-            try {
-               const response = await fetch(endpoint, {
-                  method: "GET",
-                  headers: {
-                     "Content-Type": "application/json",
-                     Authorization: `Bearer ${data.accessToken}`,
-                  },
-               });
+         try {
+            const response = await fetch(endpoint, {
+               method: "GET",
+               headers: {
+               "Content-Type": "application/json",
+               Authorization: `Bearer ${data.accessToken}`,
+               },
+            });
 
-               if (!response.ok) {
-                  const errorText = await response.text();
-                  console.log("Error:", response.status, errorText);
-                  throw new Error("Error fetching contacts");
-               } else {
-                  const data = await response.json();
-                  setMessageData(data.reverse());
-               }
-            } catch (error) {
-               console.error("Error fetching contacts:", error.message);
+            if (!response.ok) {
+               const errorText = await response.text();
+               console.log("Error:", response.status, errorText);
+               throw new Error("Error fetching contacts");
+            } else {
+               const data = await response.json();
+               setMessageData(data.reverse());
             }
+         } catch (error) {
+            console.error("Error fetching contacts:", error.message);
+         } finally {
+            setIsLoading(false); // Kết thúc tải dữ liệu
+         }
          }
       };
 
@@ -71,41 +73,72 @@ const ChatRoom = ({ navigation }) => {
 
    const sendMessage = (message, from, to) => {
       try {
-         socket.emit('privateMessage', {
-            message,
-            from,
-            to
+         socket.emit("privateMessage", {
+         message,
+         from,
+         to,
          });
-         console.log('Send message: ', message, to);
+         console.log("Send message: ", message, to);
       } catch (error) {
-         console.log('error ', error);
+         console.log("error ", error);
       }
    };
 
-   const handleCreateMessage = async (senderId, receiverId, content, mediaUrl) => {
+   useEffect(() => {
+      setTimeout(() => {
+         setHasReceivedMessage(false);
+      }, 1000);
+   }, [hasReceivedMessage]);
+
+   useEffect(() => {
+      const handleMessage = ({ message, from }) => {
+         const currentContactId = item.contactUserId;
+         if (currentContactId === from) {
+         setMessageData((prevMessages) => [
+            { content: message, senderId: from },
+            ...prevMessages,
+         ]);
+         }
+      };
+
+      // Lắng nghe sự kiện từ server
+      socket.on("privateMessageToReceiver", handleMessage);
+
+      // Cleanup để xóa bỏ listener khi component unmount
+      return () => {
+         socket.off("privateMessageToReceiver", handleMessage);
+      };
+   }, [item.contactUserId]);
+
+   const handleCreateMessage = async (
+      senderId,
+      receiverId,
+      content,
+      mediaUrl
+   ) => {
       const endpoint = `${MYIP.Myip}/api/message/create`;
       try {
          const response = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-               "Content-Type": "application/json",
-               Authorization: `Bearer ${userStore.accessToken}`,
-            },
-            body: JSON.stringify({
-               senderId,
-               receiverId,
-               content,
-               mediaUrl,
-            }),
+         method: "POST",
+         headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${userStore.accessToken}`,
+         },
+         body: JSON.stringify({
+            senderId,
+            receiverId,
+            content,
+            mediaUrl,
+         }),
          });
 
          if (!response.ok) {
-            const errorText = await response.text();
-            console.log("Error:", response.status, errorText);
-            throw new Error("Error creating message");
+         const errorText = await response.text();
+         console.log("Error:", response.status, errorText);
+         throw new Error("Error creating message");
          } else {
-            const data = await response.json();
-            setMessageData((prevMessages) => [data, ...prevMessages]);
+         const data = await response.json();
+         setMessageData((prevMessages) => [data.messageData, ...prevMessages]);
          }
       } catch (error) {
          console.error("Error fetching contacts:", error.message);
@@ -114,25 +147,16 @@ const ChatRoom = ({ navigation }) => {
 
    const handleSend = async () => {
       if (input.trim()) {
-         const newMessage = {
-            id: Date.now().toString(),
-            content: input.trim(),
-            senderId: userStore.user.userId,
-            receiverId: item.contactUserId,
-            type: "text",
-         };
-
          sendMessage(input.trim(), userStore.user.userId, item.contactUserId);
-         await handleCreateMessage(userStore.user.userId, item.contactUserId, input.trim());
+         await handleCreateMessage(
+         userStore.user.userId,
+         item.contactUserId,
+         input.trim()
+         );
          setInput("");
-
-         // Cập nhật tin nhắn mới vào danh sách
-         setMessageData((prevMessages) => [newMessage, ...prevMessages]);
+         r;
       }
    };
-
-   console.log("userStore", userStore);
-   
 
    const getUserData = async () => {
       try {
@@ -158,11 +182,11 @@ const ChatRoom = ({ navigation }) => {
       if (result.assets && result.assets.length > 0) {
          const image = result.assets[0];
          const newMessage = {
-            id: Date.now().toString(),
-            content: image.uri,
-            senderId: userStore.user.userId,
-            receiverId: item.contactUserId,
-            type: "image",
+         id: Date.now().toString(),
+         content: image.uri,
+         senderId: userStore.user.userId,
+         receiverId: item.contactUserId,
+         type: "image",
          };
          setMessageData([newMessage, ...messageData]);
 
@@ -170,69 +194,72 @@ const ChatRoom = ({ navigation }) => {
       }
    };
 
-   console.log("input", input);
-
    return (
       <KeyboardAvoidingView
          style={{ flex: 1 }}
          behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-
-<View style={styles.container}>
+         <View style={styles.container}>
          {/* Header */}
          <View style={styles.header}>
-         <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-         >
-            <Icon name="arrow-back" size={24} color="#fff" />
-         </TouchableOpacity>
-         <View style={styles.titleContainer}>
-            <Text style={styles.title}>{item.nickname}</Text>
-         </View>
-         <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.iconButton}>
-               <Icon name="call" size={24} color="#fff" />
+            <TouchableOpacity
+               onPress={() => navigation.goBack()}
+               style={styles.backButton}
+            >
+               <Icon name="arrow-back" size={24} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
-               <Icon name="videocam" size={24} color="#fff" />
-            </TouchableOpacity>
+            <View style={styles.titleContainer}>
+               <Text style={styles.title}>{item.nickname}</Text>
+            </View>
+            <View style={styles.actionButtons}>
+               <TouchableOpacity style={styles.iconButton}  onPress={() => navigation.navigate("CallVoice", { to: item, from: userStore.user.userId, userStore: userStore })}>
+                  <Icon name="call" size={24} color="#fff" />
+               </TouchableOpacity>
+               <TouchableOpacity style={styles.iconButton}>
+                  <Icon name="videocam" size={24} color="#fff" />
+               </TouchableOpacity>
+            </View>
          </View>
-      </View>
 
-         {/* Message List */}
-         <ImageBackground
-         source={require("../../assets/peakpx.jpg")}
-         style={styles.container}
-      >
-         <FlatList
-            data={messageData}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-               <View
-               style={[
-                  styles.messageContainer,
-                  item.senderId === userStore.user.userId
-                     ? styles.myMessage
-                     : styles.theirMessage,
-               ]}
-               >
-               {item.content && item.content.startsWith("data:image") ? (
-                  <Image
-                     source={{ uri: item.content }}
-                     style={styles.messageImage}
-                     resizeMode="cover"
-                  />
-               ) : (
-                  <Text style={styles.messageText}>{item.content}</Text>
+         {isLoading ? (
+            <ActivityIndicator
+               size="large"
+               color="#95FC7B"
+               style={styles.loader}
+            />
+         ) : (
+            <ImageBackground
+               source={require("../../assets/peakpx.jpg")}
+               style={styles.container}
+            >
+               <FlatList
+               data={messageData}
+               keyExtractor={(item) => item.id}
+               renderItem={({ item }) => (
+                  <View
+                     style={[
+                     styles.messageContainer,
+                     item.senderId === userStore.user.userId
+                        ? styles.myMessage
+                        : styles.theirMessage,
+                     ]}
+                  >
+                     {item.content && item.content.startsWith("data:image") ? (
+                     <Image
+                        source={{ uri: item.content }}
+                        style={styles.messageImage}
+                        resizeMode="cover"
+                     />
+                     ) : (
+                     <Text style={styles.messageText}>{item.content}</Text>
+                     )}
+                  </View>
                )}
-               </View>
-            )}
-            inverted
-         />
-      </ImageBackground>
-
-         {/* Emoji Selector */}
+               inverted
+               />
+            </ImageBackground>
+         )}
+        {/* Emoji Selector */}
          {showEmojiPicker && (
             <EmojiSelector
                onEmojiSelected={handleEmojiSelect}
@@ -267,7 +294,7 @@ const ChatRoom = ({ navigation }) => {
                <Text style={styles.sendButtonText}>Gửi</Text>
             </TouchableOpacity>
          </View>
-      </View>
+         </View>
       </KeyboardAvoidingView>
    );
 };
@@ -276,6 +303,12 @@ const styles = StyleSheet.create({
    container: {
       flex: 1,
       backgroundColor: "#e5ddd5",
+   },
+   loadingContainer: {
+      // Thêm style loading container
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
    },
    messageImage: {
       width: 300,
@@ -350,6 +383,12 @@ const styles = StyleSheet.create({
    },
    messageText: {
       fontSize: 16,
+   },
+   loader: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "transparent",
    },
 });
 

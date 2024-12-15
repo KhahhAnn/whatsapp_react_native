@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -6,128 +7,142 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
-import { Users } from "../../lib/data";
-import Search from "./Search";
-import Header from "./Header";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { MYIP } from "../../constants/Utils";
-import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import socket from "../Socket/socketConnect";
+import { MYIP } from "../../constants/Utils";
+import Search from "./Search";
+import Header from "./Header";
 
 export default function Chat() {
   const ipv4 = MYIP.Myip;
-  const [store, setStore] = useState();
-  const [contactData, setContactData] = useState();
+  const [userData, setUserData] = useState(null);
+  const [contactData, setContactData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation();
 
+  // Lấy thông tin người dùng từ AsyncStorage
   const getUserData = async () => {
     try {
-      const userData = await AsyncStorage.getItem("userStore");
-      const user = JSON.parse(userData);
-      return user;
+      const storedData = await AsyncStorage.getItem("userStore");
+      return storedData ? JSON.parse(storedData) : null;
     } catch (error) {
       console.error("Error retrieving user data:", error.message);
       return null;
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await getUserData();
-      if (data) {
-        const endpoint = `${ipv4}/api/contact/contacts-user/${data.user.userId}`;
-        try {
-          const response = await fetch(endpoint, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${data.accessToken}`,
-            },
-          });
-  
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.log("Error:", response.status, errorText);
-            throw new Error("Error fetching contacts");
-          }
-  
-          const contactsData = await response.json();
-          setContactData(contactsData);
+  // Kết nối socket nếu chưa kết nối
+  const connectSocket = (userId) => {
+    if (!socket.connected) {
+      socket.auth = { userId };
+      console.log("Connecting socket with userId:", userId);
+      socket.connect();
+    }
+  };
 
-          // Kết nối socket
-          if (!socket.connected) {
-            socket.auth = {
-              userId: data.user.userId,
-            };
-            console.log("Connect socket: ", socket.auth);
-            socket.connect();
-          }
-        } catch (error) {
-          console.error("Error fetching contacts:", error.message);
-        }
+  // Lấy danh sách liên hệ từ API
+  const fetchContacts = async (userId, accessToken) => {
+    const endpoint = `${ipv4}/api/contact/contacts-user/${userId}`;
+    try {
+      const response = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log("Error:", response.status, errorText);
+        throw new Error("Error fetching contacts");
+      }
+
+      const data = await response.json();
+      setContactData(data);
+    } catch (error) {
+      console.error("Error fetching contacts:", error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // useEffect để tải dữ liệu ban đầu
+  useEffect(() => {
+    const initialize = async () => {
+      setIsLoading(true);
+      const user = await getUserData();
+
+      if (user) {
+        setUserData(user);
+        connectSocket(user.user.userId);
+        await fetchContacts(user.user.userId, user.accessToken);
+      } else {
+        console.log("No user data found");
+        setIsLoading(false);
       }
     };
-  
-    fetchData();
+
+    initialize();
   }, []);
-  
 
+  // Thành phần hiển thị một mục liên hệ
   const Item = ({ name, image, message, time, item }) => (
-    <View onPress={() => navigation.navigate("ChatRoom")}>
-      <TouchableOpacity
-        activeOpacity={0.6}
-        onPress={() => navigation.navigate("ChatRoom", { item })}
-      >
-        <View style={styles.userCtn}>
-          <Image
-            style={styles.image}
-            source={{ uri: image }}
-            borderRadius={50}
-            resizeMode="cover"
-          />
-
-          <View style={styles.msgCtn}>
-            <View style={styles.userDetail}>
-              <Text style={styles.name}>{name}</Text>
-              <Text style={styles.message}>{message}</Text>
-            </View>
-            <Text style={styles.message}>{time}</Text>
+    <TouchableOpacity
+      activeOpacity={0.6}
+      onPress={() => navigation.navigate("ChatRoom", { item })}
+    >
+      <View style={styles.userCtn}>
+        <Image
+          style={styles.image}
+          source={{ uri: image }}
+          borderRadius={50}
+          resizeMode="cover"
+        />
+        <View style={styles.msgCtn}>
+          <View style={styles.userDetail}>
+            <Text style={styles.name}>{name}</Text>
+            <Text style={styles.message}>{message}</Text>
           </View>
+          <Text style={styles.message}>{time}</Text>
         </View>
-      </TouchableOpacity>
-    </View>
+      </View>
+    </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <ScrollView contentInsetAdjustmentBehavior="automatic">
-        <Header />
-        <View style={styles.chatCtn}>
-          <FlatList
-            data={contactData}
-            renderItem={({ item }) => (
-              <Item
-                name={item.nickname}
-                message={"test"}
-                image={item.avatar}
-                time={"10:00"}
-                item={item}
-              />
-            )}
-            keyExtractor={(item) => item.id}
-            horizontal={false}
-            scrollEnabled={false}
-            ListHeaderComponent={Search}
-          />
+      {isLoading ? (
+        <ActivityIndicator size="large" color="#95FC7B" style={styles.loader} />
+      ) : (
+        <View contentInsetAdjustmentBehavior="automatic">
+          <Header />
+          <View style={styles.chatCtn}>
+            <FlatList
+              data={contactData}
+              renderItem={({ item }) => (
+                <Item
+                  name={item.nickname}
+                  message={item.lastMessage || "No message"}
+                  image={item.avatar}
+                  time={item.lastActive || ""}
+                  item={item}
+                />
+              )}
+              keyExtractor={(item) => item.id}
+              ListHeaderComponent={<Search />}
+              ListEmptyComponent={<Text style={styles.emptyText}>No contacts found</Text>}
+            />
+          </View>
         </View>
-      </ScrollView>
+      )}
 
       <View style={styles.newUpdate}>
         <View style={styles.pen}>
-          {/* <FontAwesome name="pencil" size={24} color="white" /> */}
           <Image
             style={{ width: 30, height: 30 }}
             source={require("../../assets/images/ai.png")}
@@ -139,7 +154,6 @@ export default function Chat() {
             size={28}
             color="#011513"
           />
-          {/* <MaterialIcons name="add-ic-call" size={20} color="#011513" /> */}
         </View>
       </View>
     </View>
@@ -152,6 +166,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#011513",
     height: "100%",
   },
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   chatCtn: {
     marginTop: 20,
   },
@@ -160,9 +179,6 @@ const styles = StyleSheet.create({
     gap: 15,
     alignItems: "center",
     marginBottom: 25,
-  },
-  touch: {
-    backgroundColor: "red",
   },
   msgCtn: {
     flexDirection: "row",
@@ -185,7 +201,6 @@ const styles = StyleSheet.create({
     width: 55,
     height: 55,
   },
-
   newUpdate: {
     position: "absolute",
     bottom: 20,
@@ -208,5 +223,10 @@ const styles = StyleSheet.create({
     height: 60,
     alignItems: "center",
     justifyContent: "center",
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#cbd5c0",
+    marginTop: 20,
   },
 });
